@@ -35,3 +35,86 @@ The system we are building with RideLink is designed for students, staff and fac
     5. AI Powered features: 
         (a) Natural language trip box: translates user queries into structured searches on the available rides. 
         (b) Ranking: When possible, combining different modes of transportation or alternate routes to suggest multi-leg routes for cheaper or more flexible ride options.
+
+1.3.
+
+1. Register with Five college email
+
+Actor(s): Students,faculty
+Trigger: A user hits sign up and registers with school email  
+Main Success Scenario: The user verifies the email and completes profile setup.
+Failure Cases:
+The email is not from an approved Five College domain.
+The verification code is invalid or expired.
+The email is already associated with an existing account.
+
+2. Create and edit user profile
+
+Actor(s): Registered User 
+Trigger: A user opens the profile settings page.
+Main Success Scenario: The system validates the input.
+Failure Cases:
+Required profile fields are left blank.
+Invalid contact information is entered.
+The system fails to save the profile due to a server or database error.
+
+3. Post a Ride Offer
+
+Actor(s): Driver
+Trigger: A driver selects “Post a Ride.”
+Main Success Scenario:
+The driver enters ride details including start location, destination, date/time or time window, price per seat, number of seats, and ride rules.
+Failure Cases:
+Required ride details are missing.
+Date/time is invalid or in the past.
+Price or seat count is invalid.
+The system cannot save the ride offer.
+
+4. Search and Filter Ride Offers
+
+Actor(s):Rider
+Trigger: A rider enters trip details or opens the search page and applies filters 
+Main Success Scenario:The rider enters destination, date/time preferences, budget, or other filters.
+Failure Cases:
+No matching or near-matching rides are found.
+Invalid search criteria are entered.
+Map or list results fail to load.
+
+5. View Ranked Route suggestions
+
+Actor(s): Rider 
+Trigger:A rider requests recommendations after searching for a trip 
+Main Success Scenario:The rider reviews the ranked recommendations and chooses one to pursue.
+Failure Cases:
+No valid route options are available.
+External route data or internal ranking logic fails.
+Multi-leg route generation cannot be completed.
+
+6. Request a Ride 
+
+Actor(s): Rider 
+Trigger: A rider selects a ride offer and clicks “Request Ride”
+Main Success Scenario:The rider chooses a listed ride offer.
+Failure Cases:
+The ride is already full.
+The ride offer has been removed or updated.
+The system fails to record or send the request
+
+7. Accept a ride request and share contact information 
+
+Actor(s): Driver, Rider
+Trigger:A driver reviews a pending ride request and chooses to accept it 
+Main Success Scenario:The driver accepts the rider’s request.
+Failure Cases:
+No seats remain by the time the driver responds.
+Contact-sharing fails because required contact information is missing.
+
+8. Cancel a ride request
+
+Actor(s): Rider
+Trigger: A rider opens one of their pending or accepted ride requests and selects “Cancel.”
+Main Success Scenario: The rider selects a request to cancel.
+Failure Cases:
+The request cannot be canceled because the trip is too close to departure.
+The request no longer exists.
+The system fails to update the ride or notify the driver.

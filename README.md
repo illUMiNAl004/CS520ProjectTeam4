@@ -1,7 +1,8 @@
 # CS520ProjectTeam4
-RideShare Project for CICS 520 Team 4
+Project RideLink for CICS 520 Team 4
 
 CS 520: Project Document Template Spring 2026
+
 Instructor: Heather Conboy
 University of Massachusetts Amherst
 

@@ -36,7 +36,7 @@ The system we are building with RideLink is designed for students, staff and fac
         (a) Natural language trip box: translates user queries into structured searches on the available rides. 
         (b) Ranking: When possible, combining different modes of transportation or alternate routes to suggest multi-leg routes for cheaper or more flexible ride options.
 
-1.3.
+1.3. Functional requirements
 
 1. Register with Five college email
 
@@ -118,3 +118,16 @@ Failure Cases:
 The request cannot be canceled because the trip is too close to departure.
 The request no longer exists.
 The system fails to update the ride or notify the driver.
+
+1.4. Non-Functional Requirements
+
+1. Authentication and Access Control using the .edu verification process giving 401 Unauthorized response for unauthenticated access.
+2. Data Encryption at Rest and in Transit using PII in PostegreSQL and TLS in Transit.
+3. Contact Information exposure control makes personal info invisible to another user unless both parties have completed the request/accept flow.
+4. API Response Time should be to industry standards under normal load.
+
+1.5. Challenges & Risks
+
+1. User Adoption and Critical mass: Success of the product depends on active users, outside of peak travel periods the numbers could be scarce. This would make the platform feel unreliable and cause early adopters to abandon it before catching the drift. Mitigation: empty state design will be implemented which would show near-match rides and perhaps even public transport routes that gets them as close to their desired destination as possible.
+2. Trust and Safety: Some may be hesitant to share personal info with or accept rides from strangers so no matter the technical quality it could feel untrustworthy. Mitigation: Have a driver/rider rating system and make the contact sharing flow explicit and consent based. Moreover, the Five-College system also reduces trust concerns.
+3. PostgreSQL Schema and Query Performance: Poorly designed filters or missing indexes could cause slow queries that degrade the user experience, especially as ride volume scales. Mitigation: A lot of time will be invested upfront when designing the schema with appropriate indexes on high frequency fields. Also we will define clear API contracts between the REST layer and database services layer so the query logic is centralized.

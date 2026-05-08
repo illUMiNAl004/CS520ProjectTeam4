@@ -36,18 +36,16 @@ export const riderApi = {
   signup: (formData) =>
     apiFetch("/api/signup", { method: "POST", body: JSON.stringify({ role: "rider", ...formData }) }),
   login: ({ email, password }) =>
-    apiFetch("/api/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+    apiFetch("/api/login", { method: "POST", body: JSON.stringify({ email, password, role: "rider" }) }),
   getProfile: () => apiFetch("/api/me"),
-  updateProfile: (_id, updates) => apiFetch("/api/me", { method: "PATCH", body: JSON.stringify(updates) }),
 };
 
 export const driverApi = {
   signup: (formData) =>
     apiFetch("/api/signup", { method: "POST", body: JSON.stringify({ role: "driver", ...formData }) }),
   login: ({ email, password }) =>
-    apiFetch("/api/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+    apiFetch("/api/login", { method: "POST", body: JSON.stringify({ email, password, role: "driver" }) }),
   getProfile: () => apiFetch("/api/me"),
-  updateGuidelines: (_id, guidelines) => apiFetch("/api/me", { method: "PATCH", body: JSON.stringify({ guidelines }) }),
-  updatePreferences: (_id, preferences) => apiFetch("/api/me", { method: "PATCH", body: JSON.stringify({ preferences }) }),
-  setOnlineStatus: (_id, isOnline) => apiFetch("/api/me", { method: "PATCH", body: JSON.stringify({ isOnline }) }),
+  saveSetup: (data) =>
+    apiFetch("/api/driver/setup", { method: "POST", body: JSON.stringify(data) }),
 };

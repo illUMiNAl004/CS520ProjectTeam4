@@ -22,9 +22,6 @@ export default function Auth({ initialMode = "signup" }) {
     firstName: "", lastName: "",
     email: "", password: "",
     university: "",
-    vehicleMake: "", vehicleModel: "",
-    vehicleYear: "", vehicleColor: "",
-    licensePlate: "",
   });
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -52,36 +49,26 @@ export default function Auth({ initialMode = "signup" }) {
     setLoading(true);
 
     try {
-      let result;
       if (mode === "login") {
-        // ── TODO: connect to real backend ──
-        result = role === "rider"
+        const result = role === "rider"
           ? await riderApi.login(loginForm)
           : await driverApi.login(loginForm);
+
+        if (!result.success) {
+          setError(result.error || "Something went wrong. Please try again.");
+          return;
+        }
+        localStorage.setItem("ra_token", result.token);
+        localStorage.setItem("ra_user", JSON.stringify(result.user));
+        if (result.user.role === "driver") navigate("/driver-profile");
+        else navigate("/");
       } else {
-        const formData = role === "rider"
-          ? { ...RIDER_SCHEMA_SHAPE, ...riderForm }
-          : { ...DRIVER_SCHEMA_SHAPE, ...driverForm,
-              vehicle: { make: driverForm.vehicleMake, model: driverForm.vehicleModel,
-                         year: driverForm.vehicleYear, color: driverForm.vehicleColor,
-                         licensePlate: driverForm.licensePlate } };
-        result = role === "rider"
-          ? await riderApi.signup(formData)
-          : await driverApi.signup(formData);
+        // hold signup data in sessionStorage — DB write happens at end of flow
+        const form = role === "rider" ? riderForm : driverForm;
+        sessionStorage.setItem("ra_pending_signup", JSON.stringify({ role, ...form }));
+        navigate("/pick-emoji");
       }
-
-      if (!result.success) {
-        setError(result.error || "Something went wrong. Please try again.");
-        return;
-      }
-
-      localStorage.setItem("ra_token", result.token);
-      localStorage.setItem("ra_user", JSON.stringify(result.user));
-
-      if (result.user.role === "rider") navigate("/book");
-      else navigate("/driver-profile");
-
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -204,21 +191,6 @@ export default function Auth({ initialMode = "signup" }) {
                     value={driverForm.email} onChange={v => updateDriver("email", v)} />
                   <InputField label="University" placeholder="e.g. UCLA"
                     value={driverForm.university} onChange={v => updateDriver("university", v)} />
-                  <div style={styles.sectionDivider}>🚗 Vehicle Details</div>
-                  <div style={styles.row2}>
-                    <InputField label="Make" placeholder="Honda"
-                      value={driverForm.vehicleMake} onChange={v => updateDriver("vehicleMake", v)} />
-                    <InputField label="Model" placeholder="Civic"
-                      value={driverForm.vehicleModel} onChange={v => updateDriver("vehicleModel", v)} />
-                  </div>
-                  <div style={styles.row2}>
-                    <InputField label="Year" placeholder="2021"
-                      value={driverForm.vehicleYear} onChange={v => updateDriver("vehicleYear", v)} />
-                    <InputField label="Color" placeholder="White"
-                      value={driverForm.vehicleColor} onChange={v => updateDriver("vehicleColor", v)} />
-                  </div>
-                  <InputField label="License Plate" placeholder="ABC 1234"
-                    value={driverForm.licensePlate} onChange={v => updateDriver("licensePlate", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={driverForm.password} onChange={v => updateDriver("password", v)} />
                   <InputField label="Confirm Password" type="password" placeholder="Repeat your password"

@@ -1,87 +1,74 @@
-/**
- * RideAway — Page 2: Auth (Login / Sign Up)
- * File: src/pages/Auth.jsx
- * Team member: assign to person responsible for auth
- *
- * Features:
- * - Rider / Driver role toggle
- * - Login ↔ Sign-up switcher
- * - Schema-connected form (stubs, not yet live)
- */
-
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-
-// ── Schema stubs (wire up when backend is ready) ──
+import { Link, useNavigate } from "react-router-dom";
 import { riderApi, driverApi, RIDER_SCHEMA_SHAPE, DRIVER_SCHEMA_SHAPE } from "../schema";
 
-export default function Auth() {
-  const [params] = useSearchParams();
+// initialMode comes from the route ("login" or "signup") so we don't have to mess with URL params
+export default function Auth({ initialMode = "signup" }) {
   const navigate = useNavigate();
 
-  // role: "rider" | "driver"
-  const [role, setRole] = useState(params.get("role") === "driver" ? "driver" : "rider");
-  // mode: "login" | "signup"
-  const [mode, setMode] = useState("signup");
+  const [role, setRole] = useState("rider");
+  const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Rider signup fields (mirrors RIDER_SCHEMA_SHAPE)
+  // form state for each case kept separate to avoid field bleed
   const [riderForm, setRiderForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
     university: "",
   });
 
-  // Driver signup fields (mirrors DRIVER_SCHEMA_SHAPE)
   const [driverForm, setDriverForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
     university: "",
-    vehicleMake: "", vehicleModel: "",
-    vehicleYear: "", vehicleColor: "",
-    licensePlate: "",
   });
 
-  // Login fields (shared)
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // frontend checks before we even hit the server
+    if (mode === "login") {
+      if (!loginForm.email || !loginForm.password) return setError("Please fill in all fields.");
+      if (!validateEmail(loginForm.email)) return setError("Please enter a valid email address.");
+    } else {
+      const form = role === "rider" ? riderForm : driverForm;
+      if (!form.firstName || !form.lastName || !form.email || !form.password || !form.university)
+        return setError("Please fill in all fields.");
+      if (!validateEmail(form.email)) return setError("Please enter a valid email address.");
+      if (form.password.length < 8) return setError("Password must be at least 8 characters.");
+      if (form.password !== confirmPassword) return setError("Passwords do not match.");
+    }
+
     setLoading(true);
 
     try {
-      let result;
       if (mode === "login") {
-        // ── TODO: connect to real backend ──
-        result = role === "rider"
+        const result = role === "rider"
           ? await riderApi.login(loginForm)
           : await driverApi.login(loginForm);
+
+        if (!result.success) {
+          setError(result.error || "Something went wrong. Please try again.");
+          return;
+        }
+        localStorage.setItem("ra_token", result.token);
+        localStorage.setItem("ra_user", JSON.stringify(result.user));
+        if (result.user.role === "driver") navigate("/driver-profile");
+        else navigate("/");
       } else {
-        const formData = role === "rider"
-          ? { ...RIDER_SCHEMA_SHAPE, ...riderForm }
-          : { ...DRIVER_SCHEMA_SHAPE, ...driverForm,
-              vehicle: { make: driverForm.vehicleMake, model: driverForm.vehicleModel,
-                         year: driverForm.vehicleYear, color: driverForm.vehicleColor,
-                         licensePlate: driverForm.licensePlate } };
-        result = role === "rider"
-          ? await riderApi.signup(formData)
-          : await driverApi.signup(formData);
+        // hold signup data in sessionStorage — DB write happens at end of flow
+        const form = role === "rider" ? riderForm : driverForm;
+        sessionStorage.setItem("ra_pending_signup", JSON.stringify({ role, ...form }));
+        navigate("/pick-emoji");
       }
-
-      if (!result.success) {
-        setError(result.error || "Something went wrong. Please try again.");
-        return;
-      }
-
-      localStorage.setItem("ra_token", result.token);
-      localStorage.setItem("ra_user", JSON.stringify(result.user));
-
-      if (result.user.role === "rider") navigate("/book");
-      else navigate("/driver-profile");
-
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -186,6 +173,8 @@ export default function Auth() {
                     value={riderForm.university} onChange={v => updateRider("university", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={riderForm.password} onChange={v => updateRider("password", v)} />
+                  <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
+                    value={confirmPassword} onChange={v => setConfirmPassword(v)} />
                 </>
               )}
 
@@ -202,23 +191,10 @@ export default function Auth() {
                     value={driverForm.email} onChange={v => updateDriver("email", v)} />
                   <InputField label="University" placeholder="e.g. UCLA"
                     value={driverForm.university} onChange={v => updateDriver("university", v)} />
-                  <div style={styles.sectionDivider}>🚗 Vehicle Details</div>
-                  <div style={styles.row2}>
-                    <InputField label="Make" placeholder="Honda"
-                      value={driverForm.vehicleMake} onChange={v => updateDriver("vehicleMake", v)} />
-                    <InputField label="Model" placeholder="Civic"
-                      value={driverForm.vehicleModel} onChange={v => updateDriver("vehicleModel", v)} />
-                  </div>
-                  <div style={styles.row2}>
-                    <InputField label="Year" placeholder="2021"
-                      value={driverForm.vehicleYear} onChange={v => updateDriver("vehicleYear", v)} />
-                    <InputField label="Color" placeholder="White"
-                      value={driverForm.vehicleColor} onChange={v => updateDriver("vehicleColor", v)} />
-                  </div>
-                  <InputField label="License Plate" placeholder="ABC 1234"
-                    value={driverForm.licensePlate} onChange={v => updateDriver("licensePlate", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={driverForm.password} onChange={v => updateDriver("password", v)} />
+                  <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
+                    value={confirmPassword} onChange={v => setConfirmPassword(v)} />
                 </>
               )}
 
@@ -229,9 +205,9 @@ export default function Auth() {
 
             <p style={styles.switchMode}>
               {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-              <button style={styles.switchBtn} onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+              <Link to={mode === "login" ? "/signup" : "/login"} style={{ ...styles.switchBtn, textDecoration: "none" }}>
                 {mode === "login" ? "Sign up" : "Log in"}
-              </button>
+              </Link>
             </p>
 
           </div>

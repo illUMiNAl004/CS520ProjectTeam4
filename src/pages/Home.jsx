@@ -10,7 +10,6 @@ const STATS = [
 
 const FEATURES = [
   { icon: "👤", title: "Customizable Driver Profiles", desc: "Your car, your rules. Set ride guidelines so every trip is comfortable and transparent from start to finish." },
-  { icon: "💬", title: "Ride Messenger", desc: "Coordinate pickup spots and timing directly within the app — no need to exchange numbers." },
   { icon: "📊", title: "Precision Cost-Sharing", desc: "Our algorithm factors distance, stops, and fuel efficiency so every fare is fair and transparent." },
   { icon: "🛡️", title: "Verified Community", desc: "Only university-verified students and drivers. Safe, trusted, campus-first ridesharing." },
 ];

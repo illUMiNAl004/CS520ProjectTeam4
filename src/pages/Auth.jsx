@@ -1,39 +1,23 @@
-/**
- * RideAway — Page 2: Auth (Login / Sign Up)
- * File: src/pages/Auth.jsx
- * Team member: assign to person responsible for auth
- *
- * Features:
- * - Rider / Driver role toggle
- * - Login ↔ Sign-up switcher
- * - Schema-connected form (stubs, not yet live)
- */
-
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-
-// ── Schema stubs (wire up when backend is ready) ──
+import { Link, useNavigate } from "react-router-dom";
 import { riderApi, driverApi, RIDER_SCHEMA_SHAPE, DRIVER_SCHEMA_SHAPE } from "../schema";
 
-export default function Auth() {
-  const [params] = useSearchParams();
+// initialMode comes from the route ("login" or "signup") so we don't have to mess with URL params
+export default function Auth({ initialMode = "signup" }) {
   const navigate = useNavigate();
 
-  // role: "rider" | "driver"
-  const [role, setRole] = useState(params.get("role") === "driver" ? "driver" : "rider");
-  // mode: "login" | "signup"
-  const [mode, setMode] = useState("signup");
+  const [role, setRole] = useState("rider");
+  const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Rider signup fields (mirrors RIDER_SCHEMA_SHAPE)
+  // form state for each case kept separate to avoid field bleed
   const [riderForm, setRiderForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
     university: "",
   });
 
-  // Driver signup fields (mirrors DRIVER_SCHEMA_SHAPE)
   const [driverForm, setDriverForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
@@ -43,12 +27,28 @@ export default function Auth() {
     licensePlate: "",
   });
 
-  // Login fields (shared)
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // frontend checks before we even hit the server
+    if (mode === "login") {
+      if (!loginForm.email || !loginForm.password) return setError("Please fill in all fields.");
+      if (!validateEmail(loginForm.email)) return setError("Please enter a valid email address.");
+    } else {
+      const form = role === "rider" ? riderForm : driverForm;
+      if (!form.firstName || !form.lastName || !form.email || !form.password || !form.university)
+        return setError("Please fill in all fields.");
+      if (!validateEmail(form.email)) return setError("Please enter a valid email address.");
+      if (form.password.length < 8) return setError("Password must be at least 8 characters.");
+      if (form.password !== confirmPassword) return setError("Passwords do not match.");
+    }
+
     setLoading(true);
 
     try {
@@ -186,6 +186,8 @@ export default function Auth() {
                     value={riderForm.university} onChange={v => updateRider("university", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={riderForm.password} onChange={v => updateRider("password", v)} />
+                  <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
+                    value={confirmPassword} onChange={v => setConfirmPassword(v)} />
                 </>
               )}
 
@@ -219,6 +221,8 @@ export default function Auth() {
                     value={driverForm.licensePlate} onChange={v => updateDriver("licensePlate", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={driverForm.password} onChange={v => updateDriver("password", v)} />
+                  <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
+                    value={confirmPassword} onChange={v => setConfirmPassword(v)} />
                 </>
               )}
 
@@ -229,9 +233,9 @@ export default function Auth() {
 
             <p style={styles.switchMode}>
               {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-              <button style={styles.switchBtn} onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+              <Link to={mode === "login" ? "/signup" : "/login"} style={{ ...styles.switchBtn, textDecoration: "none" }}>
                 {mode === "login" ? "Sign up" : "Log in"}
-              </button>
+              </Link>
             </p>
 
           </div>

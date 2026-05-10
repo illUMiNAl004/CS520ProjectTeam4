@@ -6,6 +6,8 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import RouteMap from "../components/RouteMap";
+import AddressInput from "../components/AddressInput";
 
 // ── Schema stub ──
 // import { riderApi } from "../schema";
@@ -50,30 +52,22 @@ export default function BookRide() {
                 <div style={{ ...styles.dot, background: "var(--gold)" }} />
                 <div style={styles.dotLine} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={styles.locLabel}>Pickup</div>
-                <input
-                  className="input-field"
-                  style={{ border: "none", background: "transparent", padding: "4px 0", fontSize: 15 }}
-                  placeholder="Enter pickup location..."
-                  value={pickup}
-                  onChange={e => setPickup(e.target.value)}
-                />
-              </div>
+              <AddressInput
+                label="Pickup"
+                value={pickup}
+                onChange={setPickup}
+                placeholder="Enter pickup location..."
+              />
             </div>
             <div style={styles.locDivider} />
             <div style={styles.locRow}>
               <div style={{ ...styles.dot, background: "var(--black)" }} />
-              <div style={{ flex: 1 }}>
-                <div style={styles.locLabel}>Drop-off</div>
-                <input
-                  className="input-field"
-                  style={{ border: "none", background: "transparent", padding: "4px 0", fontSize: 15 }}
-                  placeholder="Where are you headed?"
-                  value={dropoff}
-                  onChange={e => setDropoff(e.target.value)}
-                />
-              </div>
+              <AddressInput
+                label="Drop-off"
+                value={dropoff}
+                onChange={setDropoff}
+                placeholder="Where are you headed?"
+              />
             </div>
           </div>
 
@@ -165,21 +159,7 @@ export default function BookRide() {
 
         {/* ── Right: Map placeholder ── */}
         <div style={styles.mapPanel}>
-          <div style={styles.mapPlaceholder}>
-            <div style={styles.mapGrid} />
-            <div style={{ ...styles.mapRoad, top: "45%", left: 0, right: 0, height: 8 }} />
-            <div style={{ ...styles.mapRoad, top: "65%", left: 0, right: 0, height: 6 }} />
-            <div style={{ ...styles.mapRoad, left: "40%", top: 0, bottom: 0, width: 8, height: "100%" }} />
-            <div style={{ ...styles.mapRoad, left: "65%", top: 0, bottom: 0, width: 6, height: "100%" }} />
-            <div style={styles.mapCar}>🚗</div>
-            {pickup && <div style={styles.mapPinA}>📍<span style={styles.pinLabel}>You</span></div>}
-            {dropoff && <div style={styles.mapPinB}>🏁<span style={styles.pinLabel}>Dest</span></div>}
-            {!pickup && !dropoff && (
-              <div style={styles.mapOverlay}>
-                <p style={{ color: "#888", fontSize: 15 }}>Enter locations to see your route</p>
-              </div>
-            )}
-          </div>
+           <RouteMap pickup={pickup} dropoff={dropoff} />
         </div>
 
       </div>
@@ -205,8 +185,10 @@ const styles = {
 
   locationCard: {
     border: "1.5px solid var(--border)", borderRadius: "var(--radius-md)",
-    overflow: "hidden", background: "var(--surface)",
+    overflow: "visible",
+    background: "var(--surface)",
   },
+  
   locRow: { padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 },
   locLabel: { fontSize: 10, color: "var(--gold)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 2 },
   dot: { width: 12, height: 12, borderRadius: "50%", flexShrink: 0 },

@@ -7,14 +7,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-// ── Schema stub ──
-// import { riderApi } from "../schema";
-// TODO: call riderApi.processPayment(tripId, paymentMethodId)
-// TODO: call riderApi.updateProfile to add loyaltyPoints earned
-
 const TRIP = {
-  from: "Main Library",
-  to: "University Ave & 5th St",
   distance: "2.4 mi",
   duration: "8 min",
   baseFare: 2.00,
@@ -23,12 +16,21 @@ const TRIP = {
   serviceFee: 0.10,
   get total() { return this.baseFare + this.distanceFare + this.shareDiscount + this.serviceFee; },
   pointsEarned: 35,
-  driver: { name: "Marcus Kim", initials: "MK", rating: 4.9 },
 };
 
 export default function Payment() {
   const navigate = useNavigate();
   const [method, setMethod] = useState("card");
+
+  const rideRaw = sessionStorage.getItem("ra_ride");
+  const { pickup = "—", dropoff = "—" } = rideRaw ? JSON.parse(rideRaw) : {};
+
+  const driverRaw = sessionStorage.getItem("ra_driver");
+  const driver = driverRaw ? JSON.parse(driverRaw) : null;
+  const driverName = driver ? `${driver.firstName || ""} ${driver.lastName || ""}`.trim() : "Your Driver";
+  const driverInitials = driver
+    ? `${driver.firstName?.[0] || ""}${driver.lastName?.[0] || ""}`
+    : "?";
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [paid, setPaid] = useState(false);
@@ -56,7 +58,7 @@ export default function Payment() {
 
           {/* Rate your driver */}
           <div style={styles.rateBlock}>
-            <p style={{ fontSize: 14, color: "var(--muted)", marginBottom: 12 }}>How was your ride with {TRIP.driver.name}?</p>
+            <p style={{ fontSize: 14, color: "var(--muted)", marginBottom: 12 }}>How was your ride with {driverName}?</p>
             <div style={styles.stars}>
               {[1, 2, 3, 4, 5].map(s => (
                 <button
@@ -95,7 +97,7 @@ export default function Payment() {
               <div style={{ ...styles.routeDot, background: "var(--gold)" }} />
               <div>
                 <div style={styles.routeLabel}>From</div>
-                <div style={styles.routeVal}>{TRIP.from}</div>
+                <div style={styles.routeVal}>{pickup}</div>
               </div>
             </div>
             <div style={styles.routeLine} />
@@ -103,7 +105,7 @@ export default function Payment() {
               <div style={{ ...styles.routeDot, background: "var(--dark)" }} />
               <div>
                 <div style={styles.routeLabel}>To</div>
-                <div style={styles.routeVal}>{TRIP.to}</div>
+                <div style={styles.routeVal}>{dropoff}</div>
               </div>
             </div>
           </div>
@@ -147,10 +149,10 @@ export default function Payment() {
 
           {/* Driver summary */}
           <div style={styles.driverRow}>
-            <div style={styles.driverAvatar}>{TRIP.driver.initials}</div>
+            <div style={styles.driverAvatar}>{driverInitials}</div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dark)" }}>{TRIP.driver.name}</div>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Your driver · {TRIP.driver.rating}★</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dark)" }}>{driverName}</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Your driver</div>
             </div>
           </div>
         </div>

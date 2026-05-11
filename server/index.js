@@ -27,6 +27,7 @@ function formatRider(r) {
     firstName: r.first_name,
     lastName: r.last_name,
     university: r.university,
+    phone: r.phone,
   };
 }
 
@@ -37,6 +38,7 @@ function formatDriver(d) {
     firstName: d.first_name,
     lastName: d.last_name,
     university: d.university,
+    phone: d.phone,
     make: d.make, model: d.model, year: d.year,
     color: d.color, licensePlate: d.license_plate, maxSeats: d.max_seats,
     guidelines: d.guidelines,
@@ -62,9 +64,9 @@ function authenticate(req, res, next) {
 
 // ── POST /api/signup ── (riders only — drivers use /api/driver/register)
 app.post("/api/signup", async (req, res) => {
-  const { role, email, password, firstName, lastName, university, emoji } = req.body;
+  const { role, email, password, firstName, lastName, university, phone, emoji } = req.body;
 
-  if (!role || !email || !password || !firstName || !lastName || !university) {
+  if (!role || !email || !password || !firstName || !lastName || !university || !phone) {
     return res.status(400).json({ success: false, error: "All fields are required." });
   }
   if (!["rider", "driver"].includes(role)) {
@@ -87,9 +89,9 @@ app.post("/api/signup", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
-      `INSERT INTO ${table} (email, password_hash, first_name, last_name, university)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [email.toLowerCase(), passwordHash, firstName, lastName, university]
+      `INSERT INTO ${table} (email, password_hash, first_name, last_name, university, phone)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [email.toLowerCase(), passwordHash, firstName, lastName, university, phone]
     );
 
     const user = rows[0];
@@ -174,9 +176,9 @@ app.post("/api/driver/setup", authenticate, async (req, res) => {
 
 // ── POST /api/driver/register ── (full driver signup in one shot)
 app.post("/api/driver/register", async (req, res) => {
-  const { email, password, firstName, lastName, university, emoji, vehicle, guidelines, preferences, location } = req.body;
+  const { email, password, firstName, lastName, university, phone, emoji, vehicle, guidelines, preferences, location } = req.body;
 
-  if (!email || !password || !firstName || !lastName || !university) {
+  if (!email || !password || !firstName || !lastName || !university || !phone) {
     return res.status(400).json({ success: false, error: "All fields are required." });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -197,12 +199,12 @@ app.post("/api/driver/register", async (req, res) => {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `INSERT INTO driver (email, password_hash, first_name, last_name, university,
+      `INSERT INTO driver (email, password_hash, first_name, last_name, university, phone,
          make, model, year, color, license_plate, max_seats,
          guidelines, preferences, starting_address, pickup_radius)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
       [
-        email.toLowerCase(), passwordHash, firstName, lastName, university,
+        email.toLowerCase(), passwordHash, firstName, lastName, university, phone,
         vehicle?.make, vehicle?.model, vehicle?.year, vehicle?.color,
         vehicle?.licensePlate, vehicle?.maxSeats || 4,
         JSON.stringify(guidelines || {}), JSON.stringify(preferences || {}),
@@ -219,6 +221,87 @@ app.post("/api/driver/register", async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error." });
   } finally {
     client.release();
+  }
+});
+
+// ── POST /api/match ──
+app.post("/api/match", authenticate, async (req, res) => {
+  const { pickup, dropoff } = req.body;
+  const riderId = req.user.id;
+  if (!pickup) return res.status(400).json({ success: false, error: "Pickup location required." });
+
+  try {
+    const { rows: drivers } = await pool.query("SELECT * FROM driver WHERE is_online = true");
+    if (drivers.length === 0)
+      return res.json({ success: false, error: "No drivers available right now." });
+
+    const pickupWords = pickup.toLowerCase().split(/[\s,]+/).filter(w => w.length > 3);
+    let matched = drivers.find(d => {
+      if (!d.starting_address) return false;
+      const addr = d.starting_address.toLowerCase();
+      return pickupWords.some(w => addr.includes(w));
+    }) || drivers[0];
+
+    await pool.query(
+      "UPDATE matches SET status = 'cancelled' WHERE rider_id = $1 AND status = 'active'",
+      [riderId]
+    );
+    const { rows } = await pool.query(
+      `INSERT INTO matches (rider_id, driver_id, pickup, dropoff) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [riderId, matched.id, pickup, dropoff || ""]
+    );
+    return res.json({ success: true, matchId: rows[0].id, driver: formatDriver(matched) });
+  } catch (err) {
+    console.error("Match error:", err);
+    return res.status(500).json({ success: false, error: "Server error." });
+  }
+});
+
+// ── GET /api/driver/riders ──
+app.get("/api/driver/riders", authenticate, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.id, m.pickup, m.dropoff, m.created_at,
+              r.first_name, r.last_name, r.phone, r.email
+       FROM matches m
+       JOIN rider r ON r.id = m.rider_id
+       WHERE m.driver_id = $1 AND m.status = 'active'
+       ORDER BY m.created_at DESC`,
+      [req.user.id]
+    );
+    return res.json({ success: true, riders: rows });
+  } catch (err) {
+    console.error("Get riders error:", err);
+    return res.status(500).json({ success: false, error: "Server error." });
+  }
+});
+
+// ── PATCH /api/match/:id/cancel ── (rider or driver can cancel)
+app.patch("/api/match/:id/cancel", authenticate, async (req, res) => {
+  try {
+    const col = req.user.role === "driver" ? "driver_id" : "rider_id";
+    const result = await pool.query(
+      `UPDATE matches SET status = 'cancelled' WHERE id = $1 AND ${col} = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (result.rowCount === 0)
+      return res.status(404).json({ success: false, error: "Match not found." });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Server error." });
+  }
+});
+
+// ── GET /api/match/active ── (rider polls this to detect driver cancellation)
+app.get("/api/match/active", authenticate, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, status FROM matches WHERE rider_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [req.user.id]
+    );
+    return res.json({ success: true, match: rows[0] || null });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 });
 

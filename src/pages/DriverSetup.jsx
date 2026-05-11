@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { driverApi } from "../schema";
 import { API_BASE_URL } from "../schema";
+import AddressInput from "../components/AddressInput";
 
 const GUIDELINE_OPTIONS = [
   { key: "noSmoking", label: "No smoking", icon: "🚭" },
@@ -198,12 +198,14 @@ export default function DriverSetup() {
 
               <div className="input-wrap">
                 <label className="input-label">Starting Address</label>
-                <input
-                  className="input-field"
-                  placeholder="e.g. 123 Main St, Amherst, MA"
-                  value={location.startingAddress}
-                  onChange={e => setLocation(l => ({ ...l, startingAddress: e.target.value }))}
-                />
+                <div style={{ border: "1.5px solid var(--border)", borderRadius: "var(--radius-md)", padding: "10px 16px", background: "var(--surface)" }}>
+                  <AddressInput
+                    label=""
+                    placeholder="e.g. 123 Main St, Amherst, MA"
+                    value={location.startingAddress}
+                    onChange={v => setLocation(l => ({ ...l, startingAddress: v }))}
+                  />
+                </div>
               </div>
 
               <div style={styles.sliderCard}>

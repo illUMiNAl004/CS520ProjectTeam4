@@ -23,6 +23,7 @@
     "start": "react-scripts start",
     "server": "nodemon server/index.js",
     "dev": "concurrently \"npm run server\" \"npm start\"",
+    "test:cases": "jest --config jest.config.js",
     "build": "react-scripts build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "gh-pages": "^6.1.1",
+    "node-fetch": "^2.7.0",
     "nodemon": "^3.1.14"
   },
   "browserslist": {

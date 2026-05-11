@@ -37,6 +37,9 @@ export default function DriverProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("guidelines");
+  const [showRiders, setShowRiders] = useState(false);
+  const [riders, setRiders] = useState([]);
+  const [ridersLoading, setRidersLoading] = useState(false);
 
   const [vehicle, setVehicle] = useState({ make: "", model: "", year: "", color: "", licensePlate: "", maxSeats: 4 });
   const [guidelines, setGuidelines] = useState(DEFAULT_GUIDELINES);
@@ -74,6 +77,35 @@ export default function DriverProfile() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isOnline: newVal }),
     });
+  };
+
+  const API = process.env.REACT_APP_API_URL || "http://localhost:5001";
+
+  const handleViewRiders = async () => {
+    setShowRiders(true);
+    setRidersLoading(true);
+    const token = localStorage.getItem("ra_token");
+    try {
+      const res = await fetch(`${API}/api/driver/riders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setRiders(data.success ? data.riders : []);
+    } catch {
+      setRiders([]);
+    }
+    setRidersLoading(false);
+  };
+
+  const handleCancelRide = async (matchId) => {
+    const token = localStorage.getItem("ra_token");
+    try {
+      await fetch(`${API}/api/match/${matchId}/cancel`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRiders(prev => prev.filter(r => r.id !== matchId));
+    } catch {}
   };
 
   const handleSave = async () => {
@@ -328,10 +360,63 @@ export default function DriverProfile() {
 
           <div style={styles.saveBar}>
             {saved && <span style={styles.savedMsg}>✓ Profile saved!</span>}
+            <button className="btn-outline" style={{ padding: "14px 28px", fontSize: 15 }} onClick={handleViewRiders}>
+              👥 Current Riders
+            </button>
             <button className="btn-gold" style={{ padding: "14px 40px", fontSize: 15 }} onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save Profile"}
             </button>
           </div>
+
+          {/* Riders panel */}
+          {showRiders && (
+            <div style={styles.ridersOverlay} onClick={() => setShowRiders(false)}>
+              <div style={styles.ridersPanel} onClick={e => e.stopPropagation()}>
+                <div style={styles.ridersPanelHeader}>
+                  <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "var(--dark)" }}>
+                    Current Riders
+                  </h3>
+                  <button style={styles.closeBtn} onClick={() => setShowRiders(false)}>✕</button>
+                </div>
+
+                {ridersLoading && (
+                  <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "24px 0" }}>Loading...</p>
+                )}
+
+                {!ridersLoading && riders.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "32px 0" }}>
+                    <div style={{ fontSize: 40, marginBottom: 10 }}>🪑</div>
+                    <p style={{ color: "var(--muted)", fontSize: 14 }}>No active riders right now.</p>
+                  </div>
+                )}
+
+                {!ridersLoading && riders.map(r => (
+                  <div key={r.id} style={styles.riderCard}>
+                    <div style={styles.riderCardAvatar}>
+                      {r.first_name?.[0]}{r.last_name?.[0]}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "var(--dark)" }}>
+                        {r.first_name} {r.last_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>📍 {r.pickup}</div>
+                      {r.dropoff && <div style={{ fontSize: 12, color: "var(--muted)" }}>🏁 {r.dropoff}</div>}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <a href={`tel:${r.phone}`} style={styles.riderActionBtn}>📞 Call</a>
+                      <a href={`sms:${r.phone}`} style={styles.riderActionBtn}>💬 SMS</a>
+                      <button
+                        style={{ ...styles.riderActionBtn, color: "var(--danger)", borderColor: "#fca5a5", cursor: "pointer", background: "#fff5f5" }}
+                        onClick={() => handleCancelRide(r.id)}
+                      >
+                        ✕ Cancel
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </main>
 
       </div>
@@ -399,5 +484,41 @@ const styles = {
     fontSize: 14, color: "var(--success)", fontWeight: 500,
     background: "#f0fdf4", border: "1px solid #bbf7d0",
     borderRadius: "var(--radius-sm)", padding: "8px 14px",
+  },
+  ridersOverlay: {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200,
+    display: "flex", alignItems: "flex-end", justifyContent: "center",
+  },
+  ridersPanel: {
+    background: "#fff", borderRadius: "24px 24px 0 0",
+    padding: "28px 28px 40px", width: "100%", maxWidth: 620,
+    display: "flex", flexDirection: "column", gap: 16,
+    maxHeight: "70vh", overflowY: "auto",
+    boxShadow: "0 -8px 40px rgba(0,0,0,0.15)",
+  },
+  ridersPanelHeader: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+  },
+  closeBtn: {
+    background: "var(--surface)", border: "1px solid var(--border)",
+    borderRadius: "50%", width: 32, height: 32, cursor: "pointer",
+    fontSize: 14, color: "var(--muted)",
+  },
+  riderCard: {
+    display: "flex", alignItems: "center", gap: 14,
+    background: "var(--surface)", border: "1px solid var(--border)",
+    borderRadius: "var(--radius-md)", padding: "14px 16px",
+  },
+  riderCardAvatar: {
+    width: 44, height: 44, borderRadius: "50%", background: "var(--gold)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontFamily: "var(--font-display)", fontWeight: 700, color: "#fff", fontSize: 15,
+    flexShrink: 0,
+  },
+  riderActionBtn: {
+    fontSize: 12, fontWeight: 500, color: "var(--dark)",
+    background: "#fff", border: "1px solid var(--border)",
+    borderRadius: "var(--radius-sm)", padding: "5px 10px",
+    textDecoration: "none", textAlign: "center",
   },
 };

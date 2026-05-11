@@ -29,8 +29,7 @@ export default function BookRide() {
 
   const handleFindDriver = () => {
     if (!pickup || !dropoff) return;
-    // TODO: call riderApi to POST trip
-    // const trip = await riderApi.requestTrip({ pickup, dropoff, seats, shared, rideType });
+    sessionStorage.setItem("ra_ride", JSON.stringify({ pickup, dropoff }));
     navigate("/matching");
   };
 

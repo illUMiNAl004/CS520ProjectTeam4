@@ -15,13 +15,13 @@ export default function Auth({ initialMode = "signup" }) {
   const [riderForm, setRiderForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
-    university: "",
+    university: "", phone: "",
   });
 
   const [driverForm, setDriverForm] = useState({
     firstName: "", lastName: "",
     email: "", password: "",
-    university: "",
+    university: "", phone: "",
   });
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -39,7 +39,7 @@ export default function Auth({ initialMode = "signup" }) {
       if (!validateEmail(loginForm.email)) return setError("Please enter a valid email address.");
     } else {
       const form = role === "rider" ? riderForm : driverForm;
-      if (!form.firstName || !form.lastName || !form.email || !form.password || !form.university)
+      if (!form.firstName || !form.lastName || !form.email || !form.password || !form.university || !form.phone)
         return setError("Please fill in all fields.");
       if (!validateEmail(form.email)) return setError("Please enter a valid email address.");
       if (form.password.length < 8) return setError("Password must be at least 8 characters.");
@@ -171,6 +171,8 @@ export default function Auth({ initialMode = "signup" }) {
                     value={riderForm.email} onChange={v => updateRider("email", v)} />
                   <InputField label="University" placeholder="e.g. UC Berkeley"
                     value={riderForm.university} onChange={v => updateRider("university", v)} />
+                  <InputField label="Contact Number" type="tel" placeholder="+1 (555) 000-0000"
+                    value={riderForm.phone} onChange={v => updateRider("phone", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={riderForm.password} onChange={v => updateRider("password", v)} />
                   <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
@@ -191,6 +193,8 @@ export default function Auth({ initialMode = "signup" }) {
                     value={driverForm.email} onChange={v => updateDriver("email", v)} />
                   <InputField label="University" placeholder="e.g. UCLA"
                     value={driverForm.university} onChange={v => updateDriver("university", v)} />
+                  <InputField label="Contact Number" type="tel" placeholder="+1 (555) 000-0000"
+                    value={driverForm.phone} onChange={v => updateDriver("phone", v)} />
                   <InputField label="Password" type="password" placeholder="Create a password"
                     value={driverForm.password} onChange={v => updateDriver("password", v)} />
                   <InputField label="Confirm Password" type="password" placeholder="Repeat your password"
